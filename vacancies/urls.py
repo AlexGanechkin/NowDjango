@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:pk>/update/', views.VacancyUpdateView.as_view()),
     path('<int:pk>/delete/', views.VacancyDeleteView.as_view()),
     path('by_user/', views.USerVacancyDetailView.as_view()),
+    # path('slug/<str:slug>/', views.VacancyDetailView.as_view()),
 ]
