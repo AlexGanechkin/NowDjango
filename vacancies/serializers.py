@@ -3,6 +3,12 @@ from rest_framework import serializers
 from vacancies.models import Vacancy, Skill
 
 
+class SkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = '__all__'
+
+
 class VacancyListSerializer(serializers.ModelSerializer):
     # id = serializers.IntegerField()
     # text = serializers.CharField(max_length=2000)
@@ -18,7 +24,7 @@ class VacancyListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vacancy
-        fields = ['id', 'text', 'slug', 'status', 'created', 'username', 'skills']
+        fields = ['id', 'text', 'slug', 'status', 'created', 'username', 'skills', 'likes']
         # fields = '__all__'
         # exclude = ['id']
 

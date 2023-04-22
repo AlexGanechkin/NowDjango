@@ -4,28 +4,60 @@ import json
 
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Q, F
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import DetailView, ListView, CreateView, DeleteView, UpdateView
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from nowdjango import settings
 from vacancies.models import Vacancy, Skill
 from vacancies.serializers import VacancyDetailSerializer, VacancyListSerializer, VacancyCreateSerializer, \
-    VacancyUpdateSerializer, VacancyDestroySerializer
+    VacancyUpdateSerializer, VacancyDestroySerializer, SkillSerializer
 
 
 def hello(request):
     return HttpResponse("Hello world")
 
 
+class SkillsViewSet(ModelViewSet):
+    queryset = Skill.objects.all()
+    serializer_class = SkillSerializer
+
+
 class VacancyListView(ListAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyListSerializer
+
+    def get(self, request, *args, **kwargs):
+        vacancy_text = request.GET.get('text', None)
+        if vacancy_text:
+            self.queryset = self.queryset.filter(
+                text__icontains=vacancy_text
+            )
+
+        #skill_name = request.GET.get('skill', None)
+        #if skill_name:
+        #    self.queryset = self.queryset.filter(
+        #        skills__name__icontains=skill_name
+        #    )
+
+        skills = request.GET.getlist('skill', None)
+        skills_q = None
+        for skill in skills:
+            if skills_q is None:
+                skills_q = Q(skills__name__icontains=skill)
+            else:
+                skills_q |= Q(skills__name__icontains=skill)
+        if skills_q:
+            self.queryset = self.queryset.filter(skills_q)
+
+        # if skill_name:
+        #    self.queryset = self.queryset.filter(
+        #        skills__name__icontains=skill_name
+        #    )
+
+        return super().get(request, *args, **kwargs)
 
 
 class VacancyDetailView(RetrieveAPIView):
@@ -73,3 +105,16 @@ class USerVacancyDetailView(View):
         }
 
         return JsonResponse(response)
+
+
+class VacancyLikeView(UpdateAPIView):
+    queryset = Vacancy.objects.all()
+    serializer_class = VacancyDetailSerializer
+
+    def put(self, request, *args, **kwargs):
+        Vacancy.objects.filter(pk__in=request.data).update(likes=F('likes') + 1)
+
+        return JsonResponse(
+            VacancyDetailSerializer(Vacancy.objects.filter(pk__in=request.data), many=True).data,
+            safe=False
+        )
